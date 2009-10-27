@@ -9,6 +9,14 @@ def verbose(msg)
   # does nothing; code is replaced later
 end
 
+# logfile and rotation
+logfile = File.open("/var/log/barcode.log", "a")
+
+trap("SIGHUP") do
+  logfile.close
+  logfile = File.open("/var/log/barcode.log", "a")
+end
+
 options = {}
 optparser = OptionParser.new do |opts|
   opts.banner = "Usage: barcode-daemon.rb -d device [recipients]"
@@ -113,6 +121,8 @@ watchdog = Thread.new {
     mutex.synchronize {
       if (should_shutdown || new_data == false) && recv_buf.length > 0
         verbose("Notifying")
+        logfile.write recv_buf
+        logfile.fsync
         notify(recv_buf.clone)
         recv_buf = String.new
       end
